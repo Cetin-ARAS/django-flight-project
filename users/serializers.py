@@ -3,13 +3,15 @@ from django.contrib.auth.models import User
 from rest_framework.validators import UniqueValidator
 from django.contrib.auth.password_validation import validate_password
 
+from dj_rest_auth.serializers import TokenSerializer
 
 class RegisterSerializer(serializers.ModelSerializer):
 
     email = serializers.EmailField(
         required=True,
-        validators=[UniqueValidator(queryset=User.objects.all())] 
+        validators = [UniqueValidator(queryset=User.objects.all())]
         )
+    
     password = serializers.CharField(
         write_only = True,
         required = True,
@@ -21,6 +23,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         required = True,
         style = {"input_type" : "password"}
     )
+    
     class Meta:
         model = User
         fields = [
@@ -30,13 +33,14 @@ class RegisterSerializer(serializers.ModelSerializer):
         'email',
         'password',
         'password2']
-    
+        
     def validate(self, data):
         if data["password"] != data["password2"]:
             raise serializers.ValidationError(
-                {"message" : "Password fields didn't match!"}
+                {"message" : "Password fields didnt match!"}
             )
         return data
+    
     
     def create(self, validated_data):
         password = validated_data.get("password")
@@ -45,3 +49,16 @@ class RegisterSerializer(serializers.ModelSerializer):
         user.set_password(password)
         user.save()
         return user
+    
+    
+class UserTokenSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ("id", "first_name", "last_name", "email")
+    
+    
+class CustomTokenSerializer(TokenSerializer):
+    user = UserTokenSerializer(read_only = True)
+    
+    class Meta(TokenSerializer.Meta):
+        fields = ("key", "user")
